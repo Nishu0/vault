@@ -1921,7 +1921,7 @@ dependencies = [
 [[package]]
 name = "soroquake"
 version = "0.1.0"
-source = "git+https://github.com/Nishu0/soroquake-runner?branch=main#c3229e120442578f463e6904ef83118ca6a14091"
+source = "git+https://github.com/Nishu0/soroquake-runner?branch=main#a94672a07e5bfd066136b536b8b94beafeaf3cec"
 dependencies = [
  "serde_json",
  "ureq",

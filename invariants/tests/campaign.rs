@@ -5,12 +5,19 @@
 //! shrinks the sequence to the fewest calls that still break it.
 //!
 //!   SOROQUAKE_TIME=60 cargo test -p invariants --profile fuzz -- --nocapture
+//!
+//! Fork mode starts every sequence from real testnet state instead, running
+//! the deployed wasm with the real balances (refresh with scripts/snapshot.sh):
+//!
+//!   SOROQUAKE_SNAPSHOT=snapshots/testnet.json cargo test -p invariants --profile fuzz -- --nocapture
 
 use soroban_sdk::{
     testutils::{Address as _, EnvTestConfig},
     Address, Env,
 };
 use soroquake::prelude::*;
+use soroquake::Fork;
+use std::sync::OnceLock;
 use token::{Token, TokenClient};
 use vault::{Vault, VaultClient};
 
@@ -51,11 +58,39 @@ fn outcome<T, E: core::fmt::Debug, C, I: core::fmt::Debug>(r: &Result<Result<T, 
 
 struct Campaign;
 
+fn fork() -> Option<&'static Fork> {
+    static FORK: OnceLock<Option<Fork>> = OnceLock::new();
+    FORK.get_or_init(Fork::from_env).as_ref()
+}
+
+/// Real testnet state: the deployed vault and token, alice and bob's actual
+/// positions, plus a fresh account for carol.
+fn forked_world(f: &Fork) -> World {
+    let mut env = Env::from_ledger_snapshot_file(&f.path);
+    env.set_config(EnvTestConfig { capture_snapshot_at_drop: false });
+    env.mock_all_auths();
+    let addr = |s: Option<&str>, what: &str| Address::from_str(&env, s.unwrap_or_else(|| panic!("snapshot meta has no {what}")));
+    let vault = VaultClient::new(&env, &addr(f.contract("vault"), "vault"));
+    let token = TokenClient::new(&env, &addr(f.contract("token"), "token"));
+    let users = vec![addr(f.actor("alice"), "alice"), addr(f.actor("bob"), "bob"), Address::generate(&env)];
+    let mut ghost_allowance = [[0; 3]; 3];
+    for (i, from) in users.iter().enumerate() {
+        for (j, spender) in users.iter().enumerate() {
+            ghost_allowance[i][j] = token.allowance(from, spender);
+        }
+    }
+    let prev = (vault.total_assets(), vault.total_shares());
+    World { vault, token, users, prev, ghost_allowance, zero_mint: None }
+}
+
 impl Harness for Campaign {
     type State = World;
     type Op = Op;
 
     fn setup(&self) -> World {
+        if let Some(f) = fork() {
+            return forked_world(f);
+        }
         // No snapshot files: thousands of short-lived environments per campaign.
         let env = Env::new_with_config(EnvTestConfig { capture_snapshot_at_drop: false });
         env.mock_all_auths();
@@ -171,6 +206,7 @@ impl Harness for Campaign {
                 check!(sum == total, "user shares add to {sum}, total_shares is {total}")
             }),
             Invariant::new("supply_matches_balances", "sep41", |w| {
+                // Only these three accounts ever hold tokens, on testnet too.
                 let sum: i128 = w.users.iter().map(|u| w.token.balance(u)).sum();
                 let supply = w.token.total_supply();
                 check!(sum == supply, "balances add to {sum}, total_supply is {supply}")
