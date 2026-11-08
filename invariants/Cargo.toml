@@ -12,6 +12,6 @@ publish = false
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
-vault = { path = "../contracts/vault", features = ["testutils"] }
+vault = { path = "../contracts/vault", features = ["testutils", "fixed"] }
 token = { path = "../contracts/token", features = ["testutils"] }
 soroquake = { git = "https://github.com/Nishu0/soroquake-runner", branch = "main" }
