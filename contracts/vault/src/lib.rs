@@ -4,8 +4,10 @@
 //! It keeps internal accounting only (no token transfers) so the example stays
 //! small. The default build contains a deliberate bug: `withdraw` rounds the
 //! payout UP, so once the share price is above 1 a user can withdraw more than
-//! their fair share and slowly drain other depositors. Build with
-//! `--features fixed` for the corrected version that rounds down.
+//! their fair share and slowly drain other depositors. It also accepts deposits
+//! that mint zero shares, which enables share inflation. Build with
+//! `--features fixed` for the corrected version: rounds withdrawals down and
+//! rejects zero-share deposits.
 //!
 //! Invariants Soroquake should check:
 //! - solvency: `total_assets >= sum of every user's fair claim`
@@ -29,6 +31,7 @@ pub enum Error {
     NonPositiveAmount = 2,
     InsufficientShares = 3,
     InsufficientAssets = 4,
+    ZeroShares = 5,
 }
 
 #[contract]
@@ -50,6 +53,12 @@ impl Vault {
         }
         let (assets, shares) = (Self::total_assets(env.clone()), Self::total_shares(env.clone()));
         let minted = if shares == 0 || assets == 0 { amount } else { amount * shares / assets };
+        // The fixed build refuses deposits that would mint nothing, which closes
+        // the first-depositor share inflation attack.
+        #[cfg(feature = "fixed")]
+        if minted == 0 {
+            panic_with_error!(&env, Error::ZeroShares);
+        }
         Self::set_totals(&env, assets + amount, shares + minted);
         let key = Key::Shares(user);
         let bal: i128 = env.storage().persistent().get(&key).unwrap_or(0);
