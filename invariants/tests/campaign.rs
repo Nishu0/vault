@@ -24,6 +24,8 @@ struct World {
     prev: (i128, i128),
     /// What each (owner, spender) allowance should be, tracked independently.
     ghost_allowance: [[i128; 3]; 3],
+    /// Set when a deposit succeeded but minted no shares.
+    zero_mint: Option<(usize, i128)>,
 }
 
 #[derive(Clone, Debug)]
@@ -61,7 +63,7 @@ impl Harness for Campaign {
         let vault = VaultClient::new(&env, &env.register(Vault, (admin.clone(),)));
         let token = TokenClient::new(&env, &env.register(Token, (admin,)));
         let users = (0..USERS.len()).map(|_| Address::generate(&env)).collect();
-        World { vault, token, users, prev: (0, 0), ghost_allowance: [[0; 3]; 3] }
+        World { vault, token, users, prev: (0, 0), ghost_allowance: [[0; 3]; 3], zero_mint: None }
     }
 
     fn generate(&self, w: &World, rng: &mut SeededRng) -> Op {
@@ -89,7 +91,11 @@ impl Harness for Campaign {
         let (step, result) = match *op {
             Op::Deposit(u, amt) => {
                 let r = w.vault.try_deposit(&user(u), &amt);
-                let note = r.as_ref().ok().and_then(|x| x.as_ref().ok()).map(|m| format!("minted {m} shares"));
+                let minted = r.as_ref().ok().and_then(|x| x.as_ref().ok()).copied();
+                if minted == Some(0) {
+                    w.zero_mint = Some((u, amt));
+                }
+                let note = minted.map(|m| format!("minted {m} shares"));
                 (Step::new(USERS[u], format!("deposit({amt})")).note(note.unwrap_or_default()), outcome(&r))
             }
             Op::Withdraw(u, shares) => {
@@ -154,6 +160,11 @@ impl Harness for Campaign {
                 let (a, s) = (w.vault.total_assets(), w.vault.total_shares());
                 check!(s == 0 || a > 0, "{s} shares outstanding but 0 assets")
             }),
+            // Every accepted deposit must leave the depositor with something.
+            Invariant::new("deposits_mint_shares", "vault", |w| match w.zero_mint {
+                Some((u, amt)) => Check::Fail(format!("{} deposited {amt} and received 0 shares", USERS[u])),
+                None => Check::Pass,
+            }),
             Invariant::new("shares_sum_to_total", "vault", |w| {
                 let sum: i128 = w.users.iter().map(|u| w.vault.shares(u)).sum();
                 let total = w.vault.total_shares();
@@ -183,6 +194,27 @@ impl Harness for Campaign {
                 }
             }),
         ]
+    }
+
+    /// Replay lab: alice is the victim, bob the attacker. Assets that reach the
+    /// vault without minting shares are modelled with the admin's `accrue`.
+    fn lab_op(&self, w: &World, action: &LabAction) -> Option<Op> {
+        let who = |a: &Actor| match a {
+            Actor::Victim => 0,
+            Actor::Attacker => 1,
+            Actor::Admin => 2,
+        };
+        Some(match action {
+            LabAction::Deposit(a, amt) => Op::Deposit(who(a), *amt),
+            LabAction::Withdraw(a, shares) => Op::Withdraw(who(a), *shares),
+            LabAction::WithdrawAll(a) => Op::Withdraw(who(a), w.vault.shares(&w.users[who(a)]).max(1)),
+            LabAction::Donate(_, amt) => Op::Accrue(*amt),
+            LabAction::Mint(a, amt) => Op::Mint(who(a), *amt),
+            LabAction::Transfer(a, b, amt) => Op::Transfer(who(a), who(b), *amt),
+            LabAction::Approve(a, b, amt) => Op::Approve(who(a), who(b), *amt),
+            LabAction::TransferFrom { spender, from, to, amount } => Op::TransferFrom(who(spender), who(from), who(to), *amount),
+            LabAction::Burn(a, amt) => Op::Burn(who(a), *amt),
+        })
     }
 
     fn branches(&self) -> Vec<&'static str> {
