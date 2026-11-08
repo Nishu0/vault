@@ -1,0 +1,17 @@
+[package]
+name = "invariants"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+# Stateful fuzzing harness for the contracts in this repo.
+# Run: SOROQUAKE_TIME=60 cargo test -p invariants --profile fuzz -- --nocapture
+
+[dependencies]
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+vault = { path = "../contracts/vault", features = ["testutils"] }
+token = { path = "../contracts/token", features = ["testutils"] }
+soroquake = { git = "https://github.com/Nishu0/soroquake-runner", branch = "main" }
