@@ -30,8 +30,8 @@ Both contracts are deployed on testnet with real positions:
 
 | | Address |
 | --- | --- |
-| vault | [`CDMNUISUP7KMIY2PNIOD7VZZ3PT2O7GMTCHSFE7OXUN7AGCZO756J7NB`](https://stellar.expert/explorer/testnet/contract/CDMNUISUP7KMIY2PNIOD7VZZ3PT2O7GMTCHSFE7OXUN7AGCZO756J7NB) |
-| token | [`CBYPFRCVIQ5NBOOMVIDT2CHF5EXXXZNWXWLBXWYAWQ45MWKFEDGEVOCZ`](https://stellar.expert/explorer/testnet/contract/CBYPFRCVIQ5NBOOMVIDT2CHF5EXXXZNWXWLBXWYAWQ45MWKFEDGEVOCZ) |
+| vault | [`CACRZSIZCR5ZGC5LT5PER6O4HMGBDLX744O4D5FW77BNLXEF6AXI47SC`](https://stellar.expert/explorer/testnet/contract/CACRZSIZCR5ZGC5LT5PER6O4HMGBDLX744O4D5FW77BNLXEF6AXI47SC) |
+| token | [`CDGQWHULGU4PYK7ZEPQFCCR6QATJVXPW3MLUI755HV65XAEI3WXSQWLT`](https://stellar.expert/explorer/testnet/contract/CDGQWHULGU4PYK7ZEPQFCCR6QATJVXPW3MLUI755HV65XAEI3WXSQWLT) |
 
 `scripts/snapshot.sh` captures their storage and deployed wasm into
 `snapshots/testnet.json`. With `SOROQUAKE_SNAPSHOT` set, every sequence starts
@@ -39,9 +39,8 @@ from that state: alice's 1000 and bob's 400 shares, the 1470/1400 share price,
 token balances and allowances. The deployed vault is the buggy build, so fork
 mode breaks it in a single call. CI runs fork mode on pushes to main and nightly.
 
-Testnet runs protocol 30 while soroban-sdk 29's test host supports 29; the
-contracts use nothing newer, so the snapshot is replayed on 29. The meta file
-records both versions.
+The workspace uses soroban-sdk 30 (release candidate), matching testnet's
+protocol 30, so snapshots replay at the network's real protocol version.
 
 ## Run it
 

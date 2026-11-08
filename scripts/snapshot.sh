@@ -8,12 +8,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 NETWORK="${NETWORK:-testnet}"
-# The test host in soroban-sdk 29 runs up to protocol 29. Testnet is already on
-# 30; the contracts here are built with SDK 29 and use nothing newer, so the
-# snapshot is replayed on the 29 host. The real version is kept in the meta file.
-HOST_PROTOCOL="${HOST_PROTOCOL:-29}"
-VAULT="${VAULT:-CDMNUISUP7KMIY2PNIOD7VZZ3PT2O7GMTCHSFE7OXUN7AGCZO756J7NB}"
-TOKEN="${TOKEN:-CBYPFRCVIQ5NBOOMVIDT2CHF5EXXXZNWXWLBXWYAWQ45MWKFEDGEVOCZ}"
+# Highest protocol the soroban-sdk test host supports. SDK 30 matches testnet,
+# so snapshots replay at the network's real protocol.
+HOST_PROTOCOL="${HOST_PROTOCOL:-30}"
+VAULT="${VAULT:-CACRZSIZCR5ZGC5LT5PER6O4HMGBDLX744O4D5FW77BNLXEF6AXI47SC}"
+TOKEN="${TOKEN:-CDGQWHULGU4PYK7ZEPQFCCR6QATJVXPW3MLUI755HV65XAEI3WXSQWLT}"
 ALICE="${ALICE:-GAOOZ3KQVY3QKX5BU5FCBCXMXI7FBSLFXUTG3ZO74MP7TBEF74TAYNG2}"
 BOB="${BOB:-GDQB7VEPW77YKZCKF3P7WRC5HZOZHDOYXPOZ6XXMJWN2PU46AGPMGSA4}"
 out="snapshots/$NETWORK.json"
