@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Nishu0/soroquake-runner@main
+      - uses: Soroquake/soroquake-runner@main
         with:
           token: ${{ secrets.SOROQUAKE_TOKEN }}
           api: ${{ vars.SOROQUAKE_API }}
@@ -24,7 +24,7 @@ jobs:
       # Pull requests change source, not what's deployed, so they skip this.
       - name: Fork mode (testnet state)
         if: ${{ !cancelled() && github.event_name != 'pull_request' }}
-        uses: Nishu0/soroquake-runner@main
+        uses: Soroquake/soroquake-runner@main
         with:
           token: ${{ secrets.SOROQUAKE_TOKEN }}
           api: ${{ vars.SOROQUAKE_API }}
