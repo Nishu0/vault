@@ -1,0 +1,20 @@
+name: soroquake
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  shake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Nishu0/soroquake-runner@main
+        with:
+          token: ${{ secrets.SOROQUAKE_TOKEN }}
+          api: ${{ vars.SOROQUAKE_API }}
+          time: ${{ github.event_name == 'schedule' && '30m' || '2m' }}
+          package: invariants
