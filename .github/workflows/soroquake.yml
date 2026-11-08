@@ -18,3 +18,16 @@ jobs:
           api: ${{ vars.SOROQUAKE_API }}
           time: ${{ github.event_name == 'schedule' && '30m' || '2m' }}
           package: invariants
+
+      # Fork mode: fuzz the contracts as deployed on testnet, with their real
+      # balances (snapshots/testnet.json, refreshed by scripts/snapshot.sh).
+      # Pull requests change source, not what's deployed, so they skip this.
+      - name: Fork mode (testnet state)
+        if: ${{ !cancelled() && github.event_name != 'pull_request' }}
+        uses: Nishu0/soroquake-runner@main
+        with:
+          token: ${{ secrets.SOROQUAKE_TOKEN }}
+          api: ${{ vars.SOROQUAKE_API }}
+          time: ${{ github.event_name == 'schedule' && '10m' || '1m' }}
+          package: invariants
+          snapshot: snapshots/testnet.json

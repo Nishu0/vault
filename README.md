@@ -24,12 +24,32 @@ The harness maps Soroquake's lab actions in `lab_op` (alice is the victim,
 bob the attacker), so every campaign also replays scripted attacks such as
 first-depositor share inflation and rounding drains, then mutates them.
 
+## Fork mode
+
+Both contracts are deployed on testnet with real positions:
+
+| | Address |
+| --- | --- |
+| vault | [`CDMNUISUP7KMIY2PNIOD7VZZ3PT2O7GMTCHSFE7OXUN7AGCZO756J7NB`](https://stellar.expert/explorer/testnet/contract/CDMNUISUP7KMIY2PNIOD7VZZ3PT2O7GMTCHSFE7OXUN7AGCZO756J7NB) |
+| token | [`CBYPFRCVIQ5NBOOMVIDT2CHF5EXXXZNWXWLBXWYAWQ45MWKFEDGEVOCZ`](https://stellar.expert/explorer/testnet/contract/CBYPFRCVIQ5NBOOMVIDT2CHF5EXXXZNWXWLBXWYAWQ45MWKFEDGEVOCZ) |
+
+`scripts/snapshot.sh` captures their storage and deployed wasm into
+`snapshots/testnet.json`. With `SOROQUAKE_SNAPSHOT` set, every sequence starts
+from that state: alice's 1000 and bob's 400 shares, the 1470/1400 share price,
+token balances and allowances. The deployed vault is the buggy build, so fork
+mode breaks it in a single call. CI runs fork mode on pushes to main and nightly.
+
+Testnet runs protocol 30 while soroban-sdk 29's test host supports 29; the
+contracts use nothing newer, so the snapshot is replayed on 29. The meta file
+records both versions.
+
 ## Run it
 
 ```bash
 cargo test -p vault -p token                                   # unit tests
 SOROQUAKE_TIME=60 cargo test -p invariants --profile fuzz -- --nocapture
 SOROQUAKE_SEED=0xfb414568 cargo test -p invariants --profile fuzz -- --nocapture   # replay
+SOROQUAKE_SNAPSHOT=snapshots/testnet.json cargo test -p invariants --profile fuzz -- --nocapture   # fork mode
 ```
 
 Set `SOROQUAKE_TOKEN` (and `SOROQUAKE_API` for a self-hosted dashboard) to
