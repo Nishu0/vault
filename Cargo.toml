@@ -3,7 +3,7 @@ resolver = "2"
 members = ["contracts/vault", "contracts/token", "invariants"]
 
 [workspace.dependencies]
-soroban-sdk = "29"
+soroban-sdk = "=30.0.0-rc.1"
 
 [profile.release]
 opt-level = "z"
