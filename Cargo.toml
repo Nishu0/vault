@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = ["contracts/vault", "contracts/token", "invariants"]
+
+[workspace.dependencies]
+soroban-sdk = "29"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+
+# Fuzzing runs natively; keep it fast to build and fast to run.
+[profile.fuzz]
+inherits = "dev"
+opt-level = 2
+debug = 0
+overflow-checks = true
