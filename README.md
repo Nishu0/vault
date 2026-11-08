@@ -5,7 +5,7 @@ full Soroquake flow end to end.
 
 | Contract | What it does | Status |
 | --- | --- | --- |
-| `contracts/vault` | Share-based vault: deposit, withdraw, admin yield | Has a planted rounding bug: `withdraw` rounds the payout up |
+| `contracts/vault` | Share-based vault: deposit, withdraw, admin yield | Planted bugs: `withdraw` rounds up, and zero-share deposits are accepted. `--features fixed` corrects both |
 | `contracts/token` | SEP-41 style token: mint, transfer, approve, transfer_from, burn | Correct |
 
 ## Invariants
@@ -14,8 +14,15 @@ full Soroquake flow end to end.
 sequences from three users and an admin, and checks after every call:
 
 - `share_price_never_drops` (vault): breaks, because of the rounding bug
+- `deposits_mint_shares` (vault): breaks, a deposit can mint zero shares
 - `solvent` and `shares_sum_to_total` (vault)
 - `supply_matches_balances`, `allowance_never_overspent`, `no_negative_balances` (sep41)
+
+## Replay lab
+
+The harness maps Soroquake's lab actions in `lab_op` (alice is the victim,
+bob the attacker), so every campaign also replays scripted attacks such as
+first-depositor share inflation and rounding drains, then mutates them.
 
 ## Run it
 
